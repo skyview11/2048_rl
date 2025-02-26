@@ -22,9 +22,9 @@ class MyApp(QMainWindow):
         self.initMenu()
 
         # 레이아웃
-        self.main_widget = MainBoard()
+        self.main_widget = MainBoard(parent=self)
         self.setCentralWidget(self.main_widget)
-
+        print(self.main_widget.size())
         # show
         self.setWindowTitle("Test")
         self.setGeometry(300, 300, 800, 800)
