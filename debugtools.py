@@ -1,6 +1,6 @@
-DEBUG = True
+DEBUG = False
 
-def dprint(sentence):
+def dprint(*sentence):
     if DEBUG:
-        print(sentence)
+        print(*sentence)
     
