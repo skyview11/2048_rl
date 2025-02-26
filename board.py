@@ -105,12 +105,12 @@ class MainBoard(QWidget):
         self.freeblocks.remove(new_id)
         self.blocks[new_id] = BlockUnit(self, new_id, self.boardstate[new_id], self.colormap["block"][str(self.boardstate[new_id])])
         self.blocks[new_id].show()
-        dprint("new block created in " + str(new_id) + ", value: " + str(self.boardstate[new_id]))
+        dprint(f"new block created in ({new_id // 4}, {new_id % 4}), value: {self.boardstate[new_id]}")
         
     def moveUpEvent(self):
         self.move_log = []
         self.action_success = False
-        prev_boardstate_buffer = self.boardstate
+        prev_boardstate_buffer = self.boardstate.copy()
         for id in [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]:
             gone = False
             if self.boardstate[id] == -1:
@@ -123,7 +123,7 @@ class MainBoard(QWidget):
                 self.freeblocks.append(i)
                 self.action_success = True
                 i -= 4
-            if i-4 >= 0 and self.boardstate[i] == self.boardstate[i-4]:
+            if i-4 >= 0 and self.boardstate[i] == self.boardstate[i-4] and (prev_boardstate_buffer[i-4] == -1 or self.boardstate[i-4] == prev_boardstate_buffer[i-4]):
                 self.boardstate[i-4] *= 2
                 self.boardstate[i] = -1
                 self.freeblocks.append(i)
@@ -138,7 +138,7 @@ class MainBoard(QWidget):
     def moveDownEvent(self):
         self.move_log = []
         self.action_success = False
-        prev_boardstate_buffer = self.boardstate
+        prev_boardstate_buffer = self.boardstate.copy()
         
         for id in [11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0]:
             gone = False
@@ -152,7 +152,7 @@ class MainBoard(QWidget):
                 self.freeblocks.append(i)
                 self.action_success = True
                 i += 4
-            if i + 4 < 16 and self.boardstate[i] == self.boardstate[i+4]:
+            if i + 4 < 16 and self.boardstate[i] == self.boardstate[i+4] and (prev_boardstate_buffer[i+4] == -1 or self.boardstate[i+4] == prev_boardstate_buffer[i+4]):
                 self.boardstate[i+4] *= 2
                 self.boardstate[i] = -1
                 self.freeblocks.append(i)
@@ -169,7 +169,7 @@ class MainBoard(QWidget):
     def moveLeftEvent(self):
         self.move_log = []
         self.action_success = False
-        prev_boardstate_buffer = self.boardstate
+        prev_boardstate_buffer = self.boardstate.copy()
         for id in [1, 5, 9, 13, 2, 6, 10, 14, 3, 7, 11, 15]:
             gone = False
             if self.boardstate[id] == -1:
@@ -182,7 +182,7 @@ class MainBoard(QWidget):
                 self.freeblocks.append(i)
                 self.action_success = True
                 i -= 1
-            if i-1 >= 0 and self.boardstate[i] == self.boardstate[i-1]:
+            if i-1 >= 0 and self.boardstate[i] == self.boardstate[i-1] and (prev_boardstate_buffer[i-1] == -1 or self.boardstate[i-1] == prev_boardstate_buffer[i-1]):
                 self.boardstate[i-1] *= 2
                 self.boardstate[i] = -1
                 self.freeblocks.append(i)
@@ -198,7 +198,7 @@ class MainBoard(QWidget):
     def moveRightEvent(self):
         self.move_log = []
         self.action_success = False
-        prev_boardstate_buffer = self.boardstate
+        prev_boardstate_buffer = self.boardstate.copy()
         for id in [2, 6, 10, 14, 1, 5, 9, 13, 0, 4, 8, 12]:
             gone = False
             if self.boardstate[id] == -1:
@@ -211,7 +211,7 @@ class MainBoard(QWidget):
                 self.freeblocks.append(i)
                 self.action_success = True
                 i += 1
-            if i+1 < 16 and self.boardstate[i] == self.boardstate[i+1]:
+            if i+1 < 16 and self.boardstate[i] == self.boardstate[i+1] and (prev_boardstate_buffer[i+1] == -1 or self.boardstate[i+1] == prev_boardstate_buffer[i+1]):
                 self.boardstate[i+1] *= 2
                 self.boardstate[i] = -1
                 self.freeblocks.append(i)
@@ -237,7 +237,7 @@ class MainBoard(QWidget):
             super().keyPressEvent(event)  # 기본 이벤트 처리
             return
         for start, end, gone in self.move_log:
-            print(start, end)
+            # dprint(start, end)
             ## animation
             self.blocks[start].moveto(end)
             if gone:
@@ -251,6 +251,6 @@ class MainBoard(QWidget):
             self.update_new_block()
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    window = MainBoard()
+    window = MainBoard(None)
     window.show()
     sys.exit(app.exec())
