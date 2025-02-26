@@ -6,27 +6,46 @@ from PyQt5.QtWidgets import QGridLayout, QVBoxLayout, QHBoxLayout
 from PyQt5.QtWidgets import QLabel, QLineEdit, QTextEdit
 from PyQt5.QtGui import QIcon
 from PyQt5.QtGui import QPainter, QColor, QFont, QPen
-from PyQt5.QtCore import Qt
+from PyQt5.QtCore import Qt, QPropertyAnimation, pyqtProperty
 import random
+from debugtools import dprint
 
 def load_colormap():
     with open("colormap.json") as f:
         colormap = json.load(f)
     return colormap
 
+class MainBoardAnimation:
+    def __init__(self, board_widget, move_log):
+        self.movelog = move_log
+        self.animations = []
+        for log in move_log:
+            var_name = f"block_{log[0]}"
+            self.animations.append(QPropertyAnimation(board_widget, var_name.encode()))
 class MainBoard(QWidget):
     def __init__(self):
+        """보드 상에서 id 규칙 (16진수 기준)
+           
+           0 1 2 3
+           4 5 6 7
+           8 9 a b
+           c d e f
+           
+        """
         super().__init__()
         self.colormap = load_colormap()
         self.boardstate = [-1] * 16
+        self.prev_boardstate = None
+        self.move_log = [] # [(1, 5), ...] 형태. 1 -> 5 로의 이동이 생긴 것
+        self.action_success = False
         self.freeblocks = list(range(16))
         self.initUI()
-        
+     
     def initUI(self):
         # 처음에 블럭 2개로 시작
         self.update_new_block()
         self.update_new_block()
-        
+    
     def paintEvent(self, event):
         painter = QPainter(self)
         ## wall 그리기 단계
@@ -62,6 +81,132 @@ class MainBoard(QWidget):
         assert self.boardstate[new_id] == -1
         self.boardstate[new_id] = 4 if random.random() < 0.25 else 2
         self.freeblocks.remove(new_id)
+    
+    def moveUpEvent(self):
+        self.move_log = []
+        self.action_success = False
+        prev_boardstate_buffer = self.boardstate
+        for id in [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]:
+            if self.boardstate[id] == -1:
+                continue
+            i = id
+            while i-4 >= 0 and self.boardstate[i-4] == -1:
+                self.boardstate[i-4] = self.boardstate[i]
+                self.boardstate[i] = -1 
+                self.freeblocks.remove(i-4)
+                self.freeblocks.append(i)
+                self.action_success = True
+                i -= 4
+            if i-4 >= 0 and self.boardstate[i] == self.boardstate[i-4]:
+                self.boardstate[i-4] *= 2
+                self.boardstate[i] = -1
+                self.freeblocks.append(i)
+                self.action_success = True
+                i -= 4
+            if i != id:
+                self.move_log.append((id, i))
+        if self.action_success:
+            self.update_new_block()
+            self.prev_boardstate = prev_boardstate_buffer
+        self.update()  # 다시 그리기 요청
+        
+    def moveDownEvent(self):
+        self.move_log = []
+        self.action_success = False
+        prev_boardstate_buffer = self.boardstate
+        for id in [11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0]:
+            if self.boardstate[id] == -1:
+                continue
+            i = id
+            while i+4 < 16 and self.boardstate[i+4] == -1:
+                self.boardstate[i+4] = self.boardstate[i]
+                self.boardstate[i] = -1 
+                self.freeblocks.remove(i+4)
+                self.freeblocks.append(i)
+                self.action_success = True
+                i += 4
+            if i + 4 < 16 and self.boardstate[i] == self.boardstate[i+4]:
+                self.boardstate[i+4] *= 2
+                self.boardstate[i] = -1
+                self.freeblocks.append(i)
+                self.action_success = True
+                i += 4
+            if i != id:
+                self.move_log.append((id, i))
+        if self.action_success:
+            self.prev_boardstate = prev_boardstate_buffer
+            self.update_new_block()
+        self.update()  # 다시 그리기 요청
+        
+    def moveLeftEvent(self):
+        self.move_log = []
+        self.action_success = False
+        prev_boardstate_buffer = self.boardstate
+        for id in [1, 5, 9, 13, 2, 6, 10, 14, 3, 7, 11, 15]:
+            if self.boardstate[id] == -1:
+                continue
+            i = id
+            while (i-1) % 4 != 3 and self.boardstate[i-1] == -1:
+                self.boardstate[i-1] = self.boardstate[i]
+                self.boardstate[i] = -1 
+                self.freeblocks.remove(i-1)
+                self.freeblocks.append(i)
+                self.action_success = True
+                i -= 1
+            if i-1 >= 0 and self.boardstate[i] == self.boardstate[i-1]:
+                self.boardstate[i-1] *= 2
+                self.boardstate[i] = -1
+                self.freeblocks.append(i)
+                self.action_success = True
+                i -= 1
+            if i != id:
+                self.move_log.append((id, i))
+        if self.action_success:
+            self.prev_boardstate = prev_boardstate_buffer
+            self.update_new_block()
+        self.update()  # 다시 그리기 요청
+        
+    def moveRightEvent(self):
+        self.move_log = []
+        self.action_success = False
+        prev_boardstate_buffer = self.boardstate
+        for id in [2, 6, 10, 14, 1, 5, 9, 13, 0, 4, 8, 12]:
+            if self.boardstate[id] == -1:
+                continue
+            i = id
+            while (i+1) % 4 != 0 and self.boardstate[i+1] == -1:
+                self.boardstate[i+1] = self.boardstate[i]
+                self.boardstate[i] = -1 
+                self.freeblocks.remove(i+1)
+                self.freeblocks.append(i)
+                self.action_success = True
+                i += 1
+            if i+1 < 16 and self.boardstate[i] == self.boardstate[i+1]:
+                self.boardstate[i+1] *= 2
+                self.boardstate[i] = -1
+                self.freeblocks.append(i)
+                self.action_success = True
+                i += 1
+            if i != id:
+                self.move_log.append((id, i))
+        if self.action_success:
+            self.prev_boardstate = prev_boardstate_buffer
+            self.update_new_block()
+        self.update()  # 다시 그리기 요청
+    
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_W:
+            self.moveUpEvent()
+        elif event.key() == Qt.Key_A:
+            self.moveLeftEvent()
+        elif event.key() == Qt.Key_S:
+            self.moveDownEvent()
+        elif event.key() == Qt.Key_D:
+            self.moveRightEvent()
+        else:
+            super().keyPressEvent(event)  # 기본 이벤트 처리
+            return
+        
         
 if __name__ == '__main__':
     app = QApplication(sys.argv)
