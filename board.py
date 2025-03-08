@@ -62,7 +62,6 @@ def skip():
             
 class MainBoard(QWidget):
     scoreChangeSig = pyqtSignal(int)
-    gameoverSig = pyqtSignal(int)
     def __init__(self, parent):
         """보드 상에서 id 규칙 (16진수 기준)
            
@@ -84,6 +83,7 @@ class MainBoard(QWidget):
         self.event_handling = False
         self.closed = False
         self.__score = 0
+        self.__gameoverflag = False
         self.setParent(parent)
         self.initUI()
         
@@ -315,7 +315,7 @@ class MainBoard(QWidget):
                 movable = True
                 break
         if not movable:
-            self.gameoverSig.emit(1)
+            self.__gameoverflag = True
         self.event_handling = False
        
     def getScore(self):
@@ -324,6 +324,9 @@ class MainBoard(QWidget):
     def __updateScore(self, num):
         self.__score += num
         self.scoreChangeSig.emit(0)
+    
+    def isGameOver(self):
+        return self.__gameoverflag
         
         
 if __name__ == '__main__':
