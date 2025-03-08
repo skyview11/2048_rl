@@ -57,6 +57,7 @@ class MainWidget(QWidget):
         self.main_board.scoreChangeSig.connect(self.scoreChangeSignalHandler)
         self.agenthandler.agentActionSignal.connect(self.agentActionHandler)
         self.agenthandler.agentChangeSignal.connect(self.agentChangeSignalHandler)
+        self.main_board.gameoverSig.connect(self.gameoverSignalHandler)
         
         ## focus bug fix code
         self.agenthandler.combo_box.clearFocus()
@@ -88,6 +89,12 @@ class MainWidget(QWidget):
             BlockUnit.animate_time = 100
         else:
             BlockUnit.animate_time = 1
+
+    def gameoverSignalHandler(self, flag):
+        if flag == 1:
+            print(f"Game Over! Scpre: {self.main_board.getScore()}")
+
+
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     ex = GameApp()
