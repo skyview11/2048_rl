@@ -1,5 +1,5 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QAction, qApp, QWidget
+from PyQt5.QtWidgets import QApplication, QMainWindow, QAction, qApp, QWidget, QMessageBox
 from PyQt5.QtWidgets import QGridLayout, QVBoxLayout, QHBoxLayout
 from PyQt5.QtWidgets import QLabel, QLineEdit, QTextEdit
 from PyQt5.QtGui import QIcon, QKeyEvent
@@ -32,8 +32,7 @@ class GameApp(QMainWindow):
         # show
         self.setWindowTitle("Test")
         self.setGeometry(300, 300, 500, 800)
-        self.show() 
-    
+        self.show()  
     def initMenu(self):
         menubar = self.menuBar()
         menubar.setNativeMenuBar(False)
@@ -53,9 +52,19 @@ class GameApp(QMainWindow):
     def keyPressEvent(self, a0):
         self.main_widget.keyPressEvent(a0)
         self.gamestate.boardstate = self.main_widget.main_board.boardstate.copy()
+        self.gamestate.score = self.main_widget.main_board.getScore()
         self.gamestate.gameoverflag = self.main_widget.main_board.isGameOver()
         if self.main_widget.main_board.isGameOver():
+            msg_box = QMessageBox()
+            msg_box.setWindowTitle("Game Over")
+            msg_box.setText(f"Game Over!\nScore: {self.gamestate.score}\nboardstate: {self.gamestate.boardstate}")
+            msg_box.setStandardButtons(QMessageBox.Ok)
+            msg_box.buttonClicked.connect(app.quit)
+            msg_box.exec_()
+            sys.exit()
             print("GameOver!")
+            print(self.gamestate)
+            
             
     
     def agentActionHandler(self, event):
