@@ -1,15 +1,12 @@
 import json
 import sys
 
-from PyQt5.QtWidgets import QApplication, QMainWindow, QAction, qApp, QWidget
-from PyQt5.QtWidgets import QGridLayout, QVBoxLayout, QHBoxLayout
-from PyQt5.QtWidgets import QLabel, QLineEdit, QTextEdit
-from PyQt5.QtGui import QIcon
-from PyQt5.QtGui import QPainter, QColor, QFont, QPen
-from PyQt5.QtCore import Qt, QPropertyAnimation, pyqtProperty, QEasingCurve, QRect, QTimer, QThread, QEventLoop, pyqtSignal
+from PyQt5.QtWidgets import QApplication, QWidget
+from PyQt5.QtWidgets import QLabel
+from PyQt5.QtGui import QPainter, QColor
+from PyQt5.QtCore import Qt, QPropertyAnimation, QEasingCurve, QRect, QEventLoop, pyqtSignal
 import random
 from debugtools import dprint
-import time
 from collections import defaultdict
 
 def load_colormap():
@@ -17,16 +14,9 @@ def load_colormap():
         colormap = json.load(f)
     return colormap
 
-class MainBoardAnimation:
-    def __init__(self, board_widget, move_log):
-        self.movelog = move_log
-        self.animations = []
-        for log in move_log:
-            var_name = f"block_{log[0]}"
-            self.animations.append(QPropertyAnimation(board_widget, var_name.encode()))
-            
 
 class BlockUnit(QLabel):
+    animate_time = 100
     def __init__(self, parent, id, blockstate, color, size=(100, 100)):
         super().__init__()
         self.unitsize = size
@@ -53,7 +43,7 @@ class BlockUnit(QLabel):
         dprint(f"({prev_row}, {prev_col}) -> ({row}, {col})")
         ## animation
         self.anim = QPropertyAnimation(self, b"geometry")
-        self.anim.setDuration(100)  # 2초 동안 애니메이션
+        self.anim.setDuration(self.animate_time)  # 2초 동안 애니메이션
         self.anim.setStartValue(QRect(20+prev_col*120, 20+prev_row*120, 100, 100))
         self.anim.setEndValue(QRect(20+col*120, 20+row*120, 100, 100))
         self.anim.setEasingCurve(QEasingCurve.Type.InOutQuad)
@@ -66,11 +56,13 @@ class BlockUnit(QLabel):
         self.setText(str(blockstate))
         self.setStyleSheet(f"background-color: rgb{tuple(color)}; color: rgb(100, 100, 100); font-size: 40px; padding: 10px;")
 
+    
 def skip():
     return
             
 class MainBoard(QWidget):
-
+    scoreChangeSig = pyqtSignal(int)
+    gameoverSig = pyqtSignal(int)
     def __init__(self, parent):
         """보드 상에서 id 규칙 (16진수 기준)
            
@@ -91,15 +83,14 @@ class MainBoard(QWidget):
         self.events = []
         self.event_handling = False
         self.closed = False
+        self.__score = 0
+        self.setParent(parent)
         self.initUI()
-        
-        # self.worker = KeyPressHandlerThread(self)
-        # self.worker.start()
         
     def initUI(self):
         # 처음에 블럭 2개로 시작
-        self.update_new_block(13)
-        self.update_new_block(14)
+        self.update_new_block()
+        self.update_new_block()
         self.resize(500, 500)
     def closeEvent(self, event):
         self.closed = True
@@ -161,6 +152,7 @@ class MainBoard(QWidget):
         if self.action_success:
             self.prev_boardstate = prev_boardstate_buffer
         # self.update()  # 다시 그리기 요청
+        
     def moveDownEvent(self):
         self.move_log = []
         integrated_blocks = []
@@ -286,36 +278,35 @@ class MainBoard(QWidget):
         # loop.exec_()
         if len(self.move_log):
             loop.exec_()
-        
+        added_score = 0
         for start, end, gone in self.move_log:
             if gone:
                 assert end in self.blocks
                 # self.blocks[start].deleteLater()
                 label2del = self.blocks.pop(start, None)
+                added_score += self.blocks[end].blockstate*2
                 label2del.hide()
                 label2del.deleteLater()
                 self.blocks[end].update(self.blocks[end].blockstate*2, self.colormap["block"][str(self.blocks[end].blockstate*2)])
             else:
                 self.blocks[end] = self.blocks.pop(start)
+        dprint(f"Score: {self.__score}")
+        self.__updateScore(added_score)
         if self.action_success:
             self.update_new_block()
-        self.event_handling = False
         
+        ## game over check
+        
+        self.event_handling = False
+       
+    def getScore(self):
+        return self.__score 
 
-class KeyPressHandlerThread(QThread):
-    trigger = pyqtSignal()
-    def __init__(self, board:MainBoard):
-        super().__init__()
-        self.running = True
-        self.board = board
-    def run(self):
-        while self.running:
-            self.board.keyPressEventHandler()
-            self.msleep(1000)
-    def handle_trigger(self):
-        pass
-    def stop(self):
-        self.running = False
+    def __updateScore(self, num):
+        self.__score += num
+        self.scoreChangeSig.emit(0)
+        
+        
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     window = MainBoard(None)
