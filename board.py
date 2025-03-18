@@ -74,7 +74,7 @@ class MainBoard(QWidget):
         super().__init__()
         self.colormap = load_colormap()
         self.boardstate = [-1] * 16
-        self.prev_boardstate = None
+        self.prev_boardstate = [-1]*16
         self.move_log = [] # [(1, 5, True), ...] 형태. 1 -> 5 로의 이동이 생겼으며, 해당 블럭은 합체되어 사라짐. 
         self.action_success = False
         self.freeblocks = list(range(16))
@@ -83,9 +83,13 @@ class MainBoard(QWidget):
         self.event_handling = False
         self.closed = False
         self.__score = 0
+        self.__prev_score = 0
         self.__gameoverflag = False
+        self.n_merged_block = 0
+        self.able_actions = []
         self.setParent(parent)
         self.initUI()
+        self.update_able_actions()
         
     def initUI(self):
         # 처음에 블럭 2개로 시작
@@ -251,6 +255,7 @@ class MainBoard(QWidget):
     
     def keyPressEvent(self, event):
         self.events.append(event.key())
+        # print(len(self.events))
         while not self.event_handling and len(self.events):
             self.keyPressEventHandler()
         else:
@@ -279,9 +284,11 @@ class MainBoard(QWidget):
         if len(self.move_log):
             loop.exec_()
         added_score = 0
+        n_merged_block = 0
         for start, end, gone in self.move_log:
             if gone:
                 assert end in self.blocks
+                n_merged_block += 1
                 # self.blocks[start].deleteLater()
                 label2del = self.blocks.pop(start, None)
                 added_score += self.blocks[end].blockstate*2
@@ -292,17 +299,27 @@ class MainBoard(QWidget):
                 self.blocks[end] = self.blocks.pop(start)
         dprint(f"Score: {self.__score}")
         self.__updateScore(added_score)
+        self.n_merged_block = n_merged_block
         if self.action_success:
             self.update_new_block()
         
         ## game over check (simulate move)
+        
+        # movelog_buffer = self.move_log.copy()
+        movable = self.update_able_actions()
+        if not movable:
+            self.__gameoverflag = True
+        
+        self.event_handling = False
+    
+    def update_able_actions(self): # return true if movable else return false
+        movable = False
+        self.able_actions = []
         action_success_buffer = self.action_success
         boardstate_buffer = self.boardstate.copy()
         prev_boardstate_buffer = self.prev_boardstate.copy()
         free_block_buffer = self.freeblocks.copy()
-        # movelog_buffer = self.move_log.copy()
-        movable = False
-        for simulate in [self.moveUpEvent, self.moveDownEvent, self.moveLeftEvent, self.moveRightEvent]:
+        for idx, simulate in enumerate([self.moveUpEvent, self.moveLeftEvent, self.moveDownEvent, self.moveRightEvent]):
             simulate()
             simulate_success = self.action_success
             ## return to original state
@@ -313,11 +330,8 @@ class MainBoard(QWidget):
             # self.move_log = movelog_buffer
             if simulate_success:
                 movable = True
-                break
-        if not movable:
-            self.__gameoverflag = True
-        self.event_handling = False
-       
+                self.able_actions.append([Qt.Key_W, Qt.Key_A, Qt.Key_S, Qt.Key_D][idx])
+        return movable
     def getScore(self):
         return self.__score 
 
@@ -327,8 +341,36 @@ class MainBoard(QWidget):
     
     def isGameOver(self):
         return self.__gameoverflag
+    
+    def reset(self):
+        blocks = list(self.blocks.keys())
+        for k in blocks:
+            label2del = self.blocks.pop(k, None)
+            label2del.hide()
+            label2del.deleteLater()
+        self.boardstate = [-1] * 16
+        self.prev_boardstate = [-1]*16
+        self.move_log = [] # [(1, 5, True), ...] 형태. 1 -> 5 로의 이동이 생겼으며, 해당 블럭은 합체되어 사라짐. 
+        self.action_success = False
+        self.freeblocks = list(range(16))
+        self.blocks = defaultdict(BlockUnit)
+        self.events = []
+        self.event_handling = False
+        self.closed = False
+        self.__score = 0
+        self.__prev_score = 0
+        self.__gameoverflag = False
+        self.able_actions = []
         
-        
+        self.update_new_block()
+        self.update_new_block()
+        self.update_able_actions()
+
+
+
+
+
+
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     window = MainBoard(None)
