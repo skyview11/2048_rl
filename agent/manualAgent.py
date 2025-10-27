@@ -1,5 +1,5 @@
 class ManualAgent:
     def __init__(self):
         pass
-    def polict(self):
+    def policy(self):
         return 0
