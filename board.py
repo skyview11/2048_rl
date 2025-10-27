@@ -257,16 +257,14 @@ class MainBoard(QWidget):
             pass
             # print("delayed")
 
-    def keyPressEventHandler(self):
-        self.event_handling = True
-        event = self.events.pop()
-        if event == Qt.Key_W:
+    def step(self, action):
+        if action == Qt.Key_W:
             self.moveUpEvent()
-        elif event == Qt.Key_A:
+        elif action == Qt.Key_A:
             self.moveLeftEvent()
-        elif event == Qt.Key_S:
+        elif action == Qt.Key_S:
             self.moveDownEvent()
-        elif event == Qt.Key_D:
+        elif action == Qt.Key_D:
             self.moveRightEvent()
         else:
             return
@@ -316,6 +314,11 @@ class MainBoard(QWidget):
                 break
         if not movable:
             self.__gameoverflag = True
+    
+    def keyPressEventHandler(self):
+        self.event_handling = True
+        event = self.events.pop()
+        self.step(event)
         self.event_handling = False
        
     def getScore(self):
