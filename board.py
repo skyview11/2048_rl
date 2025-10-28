@@ -16,7 +16,7 @@ def load_colormap():
 
 
 class BlockUnit(QLabel):
-    animate_time = 100
+    animate_time = 1
     def __init__(self, parent, id, blockstate, color, size=(100, 100)):
         super().__init__()
         self.unitsize = size
@@ -84,9 +84,27 @@ class MainBoard(QWidget):
         self.closed = False
         self.__score = 0
         self.__gameoverflag = False
-        self.setParent(parent)
         self.initUI()
+        self.setParent(parent)
         
+    
+    def reset(self):
+        ## clear block objects
+        for block in self.blocks.values():
+            block.hide()
+            block.deleteLater()
+        self.boardstate = [-1] * 16
+        self.prev_boardstate = None
+        self.move_log = [] # [(1, 5, True), ...] 형태. 1 -> 5 로의 이동이 생겼으며, 해당 블럭은 합체되어 사라짐. 
+        self.action_success = False
+        self.freeblocks = list(range(16))
+        self.blocks = defaultdict(BlockUnit)
+        self.events = []
+        self.event_handling = False
+        self.closed = False
+        self.__score = 0
+        self.__gameoverflag = False
+        self.initUI()
     def initUI(self):
         # 처음에 블럭 2개로 시작
         self.update_new_block()
@@ -296,7 +314,7 @@ class MainBoard(QWidget):
         ## game over check (simulate move)
         action_success_buffer = self.action_success
         boardstate_buffer = self.boardstate.copy()
-        prev_boardstate_buffer = self.prev_boardstate.copy()
+        prev_boardstate_buffer = self.prev_boardstate.copy() if self.prev_boardstate is not None else None
         free_block_buffer = self.freeblocks.copy()
         # movelog_buffer = self.move_log.copy()
         movable = False
@@ -306,7 +324,7 @@ class MainBoard(QWidget):
             ## return to original state
             self.action_success = action_success_buffer
             self.boardstate = boardstate_buffer.copy()
-            self.prev_boardstate = prev_boardstate_buffer.copy()
+            self.prev_boardstate = prev_boardstate_buffer.copy() if prev_boardstate_buffer is not None else None
             self.freeblocks = free_block_buffer.copy()
             # self.move_log = movelog_buffer
             if simulate_success:
@@ -314,6 +332,8 @@ class MainBoard(QWidget):
                 break
         if not movable:
             self.__gameoverflag = True
+        
+        return self.boardstate, added_score, self.isGameOver()
     
     def keyPressEventHandler(self):
         self.event_handling = True
