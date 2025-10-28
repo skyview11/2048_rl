@@ -10,8 +10,8 @@ from PyQt5.QtCore import Qt, pyqtSignal
 
 
 EPISODES = 5000
-GAMMA = 0.99
-LR = 0.001
+GAMMA = 0.
+LR = 0.01
 BATCH_SIZE = 64
 MEMORY_SIZE = 10000
 EPS_START = 1.0
@@ -94,19 +94,21 @@ class DQNAgent:
         # target Q -> GT
         next_Q = self.target_model(next_states).max(1)[0].detach()
         target_Q = rewards + GAMMA * next_Q * (1 - dones)
-        # import pdb;pdb.set_trace()
         
         loss = self.loss_fn(curr_Q, target_Q)
-
+        loss_avg = torch.mean(loss)
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
+        return loss_avg
     
     def update_target(self):
         self.target_model.load_state_dict(self.model.state_dict())
         
 
-USE_WANDB = True
+USE_WANDB = False
+
+exp_name = "zero_gamma4"
 
 
 def encode_state(state):
@@ -133,7 +135,10 @@ if __name__ == "__main__":
     
     if USE_WANDB:
         import wandb
-        wandb.init(project="2048_rl", name="no_die_panelty")
+        wandb.init(project="2048_rl", name=exp_name)
+        
+    import os
+    os.mkdir(f"exp/{exp_name}")
 
        
     
@@ -146,7 +151,8 @@ if __name__ == "__main__":
         moved = 0
         not_moved = 0
         n_step = 0
-        for t in range(150 * (episode//1000 + 1)):
+        total_loss = 0
+        for t in range(300 * (episode//1000 + 1)):
             action = agent.act(state)
             action_qt = ACTION_SPACE[action]
             next_state, reward, done = env.step(action_qt)
@@ -160,7 +166,7 @@ if __name__ == "__main__":
             ## 못움직이는 행동하면 패널티
             if torch.all(next_state==state):
                 # import pdb;pdb.set_trace()
-                reward -= 10
+                reward -= 1
                 not_moved += 1
             else:
                 moved += 1
@@ -168,7 +174,9 @@ if __name__ == "__main__":
             ####################################################
                 
             agent.remember(state, action, reward, next_state, done)
-            agent.train()
+            loss = agent.train()
+            if loss is not None:
+                total_loss += loss
             
             state = next_state
             total_reward += reward
@@ -177,14 +185,17 @@ if __name__ == "__main__":
                 break
         
         n_step = t
-        
         agent.update_target()
         agent.epsilon = max(EPS_END, agent.epsilon * EPS_DECAY)
         info = {"Episode": episode + 1, 
                 "Total_Reward": round(total_reward, 2), 
                 "Epsilon": round(agent.epsilon, 2), 
                 "steps": n_step, 
-                "moved_ratio": round(moved/(moved+not_moved), 2)}
+                "moved_ratio": round(moved/(moved+not_moved), 2),
+                "loss_avg": round(total_loss/n_step, 2)}
+        
+        if episode % 100 == 0:
+            torch.save(agent.model.state_dict(), f"exp/{exp_name}/epoch_{episode}.pth")
         if USE_WANDB:
             wandb.log(info)
         else:
