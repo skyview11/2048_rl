@@ -1,0 +1,25 @@
+  6%|█████▉                                                                                             | 303/5000 [08:19<2:09:03,  1.65s/it]
+Traceback (most recent call last):
+  File "train.py", line 156, in <module>
+    if torch.all(next_state==state):
+  File "train.py", line 92, in train
+    curr_Q = self.model(states).gather(1, actions).squeeze()
+  File "/home/skyview/miniconda3/envs/2048_rl/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1553, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/skyview/miniconda3/envs/2048_rl/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1562, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "train.py", line 54, in forward
+    return self.net(x)
+  File "/home/skyview/miniconda3/envs/2048_rl/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1553, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/skyview/miniconda3/envs/2048_rl/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1562, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/skyview/miniconda3/envs/2048_rl/lib/python3.8/site-packages/torch/nn/modules/container.py", line 219, in forward
+    input = module(input)
+  File "/home/skyview/miniconda3/envs/2048_rl/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1553, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/skyview/miniconda3/envs/2048_rl/lib/python3.8/site-packages/torch/nn/modules/module.py", line 1562, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/skyview/miniconda3/envs/2048_rl/lib/python3.8/site-packages/torch/nn/modules/linear.py", line 117, in forward
+    return F.linear(input, self.weight, self.bias)
+KeyboardInterrupt

@@ -1,0 +1,17 @@
+{
+  "os": "Linux-5.15.146.1-microsoft-standard-WSL2+-x86_64-with-glibc2.17",
+  "python": "CPython 3.8.20",
+  "startedAt": "2025-10-28T11:52:14.929391Z",
+  "program": "train.py",
+  "codePath": "train.py",
+  "codePathLocal": "train.py",
+  "git": {
+    "remote": "git@github.com:skyview11/2048_rl.git",
+    "commit": "27e912e6b76e02569810d18618a870463014206f"
+  },
+  "email": "skyview@postech.ac.kr",
+  "root": "/home/skyview/projects/toy_projects/2048_rl",
+  "host": "DESKTOP-1QITJ27",
+  "executable": "/home/skyview/miniconda3/envs/2048_rl/bin/python",
+  "writerId": "x1h02jccaisrpvx16sdsdod7d8latyjf"
+}

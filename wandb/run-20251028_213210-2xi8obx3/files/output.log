@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "train.py", line 147, in <module>
+    next_state, reward, done = env.step(action_qt)
+  File "/home/skyview/projects/toy_projects/2048_rl/board.py", line 296, in step
+    loop.exec_()
+KeyboardInterrupt

@@ -1,0 +1,11 @@
+ 14%|█████████████▊                                                                                     | 700/5000 [13:06<1:20:33,  1.12s/it]
+Traceback (most recent call last):
+  File "train.py", line 171, in <module>
+    agent.train()
+  File "train.py", line 85, in train
+    states, actions, rewards, next_states, dones = self.memory.sample(BATCH_SIZE)
+  File "train.py", line 36, in sample
+    return [self.memory[i][indices] for i in range(len(self.data_dim))]
+  File "train.py", line 36, in <listcomp>
+    return [self.memory[i][indices] for i in range(len(self.data_dim))]
+KeyboardInterrupt

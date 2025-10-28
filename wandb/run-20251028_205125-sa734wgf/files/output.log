@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "train.py", line 119, in <module>
+    for epoch in range(config.epochs):
+NameError: name 'config' is not defined

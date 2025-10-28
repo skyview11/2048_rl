@@ -9,7 +9,7 @@ from PyQt5.QtCore import Qt, pyqtSignal
 
 
 
-EPISODES = 50000
+EPISODES = 5000
 GAMMA = 0.99
 LR = 0.001
 BATCH_SIZE = 64
@@ -19,6 +19,25 @@ EPS_END = 0.01
 EPS_DECAY = 0.995
 
 ACTION_SPACE = [Qt.Key_W, Qt.Key_A, Qt.Key_S, Qt.Key_D]
+
+class Memory:
+    def __init__(self, mem_size, data_dim):
+        self.data_dim = data_dim
+        self.mem_size = mem_size
+        self.memory = [torch.zeros(mem_size, dim) for dim in data_dim]
+        self.n = 0
+    def append(self, data):
+        for i, d in enumerate(data):
+            self.memory[i][self.n] = d
+        self.n  = (self.n + 1)%self.mem_size
+    
+    def sample(self, k):
+        indices = random.sample(range(k), k)
+        return [self.memory[i][indices] for i in range(len(self.data_dim))]
+    def __len__(self):
+        return self.n
+            
+
 class DQN(nn.Module):
     def __init__(self, state_dim, action_dim):
         super(DQN, self).__init__()
@@ -27,16 +46,18 @@ class DQN(nn.Module):
             nn.ReLU(),
             nn.Linear(128, 128),
             nn.ReLU(),
-            nn.Linear(128, action_dim)
+            nn.Linear(128, 128),
+            nn.ReLU(),
+            nn.Linear(128, action_dim),
         )
     def forward(self, x):
         return self.net(x)
-
+    
 class DQNAgent:
     def __init__(self, state_dim, action_dim):
         self.action_dim = action_dim
         self.state_dim = state_dim
-        self.memory = deque(maxlen=MEMORY_SIZE)
+        self.memory = Memory(MEMORY_SIZE, (self.state_dim, 1, 1, self.state_dim, 1))
         self.epsilon = EPS_START
         
         self.model = DQN(state_dim, action_dim)
@@ -59,15 +80,13 @@ class DQNAgent:
         if len(self.memory) < BATCH_SIZE:
             return
         
-        batch = random.sample(self.memory, BATCH_SIZE)
-        
-        states, actions, rewards, next_states, dones = zip(*batch)
+        # batch = random.sample(self.memory, BATCH_SIZE)
+        # import pdb;pdb.set_trace()
+        states, actions, rewards, next_states, dones = self.memory.sample(BATCH_SIZE)
 
-        states = torch.FloatTensor(states)
-        actions = torch.LongTensor(actions).unsqueeze(1)
-        rewards = torch.FloatTensor(rewards)
-        next_states = torch.FloatTensor(next_states)
-        dones = torch.FloatTensor(dones)
+        actions = actions.long()
+        rewards = rewards.squeeze()
+        dones = dones.squeeze()
         
         # Q(s, a)
         curr_Q = self.model(states).gather(1, actions).squeeze()
@@ -75,7 +94,8 @@ class DQNAgent:
         # target Q -> GT
         next_Q = self.target_model(next_states).max(1)[0].detach()
         target_Q = rewards + GAMMA * next_Q * (1 - dones)
-
+        # import pdb;pdb.set_trace()
+        
         loss = self.loss_fn(curr_Q, target_Q)
 
         self.optimizer.zero_grad()
@@ -85,6 +105,16 @@ class DQNAgent:
     def update_target(self):
         self.target_model.load_state_dict(self.model.state_dict())
         
+
+USE_WANDB = True
+
+
+def encode_state(state):
+    encoded_boardstate = state + (state==-1)*2
+    encoded_boardstate = torch.log2(encoded_boardstate)
+    encoded_boardstate = encoded_boardstate - max(encoded_boardstate.min(), 1) + 1
+    # encoded_boardstate = encoded_boardstate / encoded_boardstate.max()
+    return encoded_boardstate
 
 if __name__ == "__main__":
     from board import MainBoard
@@ -98,26 +128,45 @@ if __name__ == "__main__":
     
     state_dim = 16
     action_dim = 4
-    n_step = 0
+    
     agent = DQNAgent(state_dim, action_dim)
     
-    for episode in (range(EPISODES)):
+    if USE_WANDB:
+        import wandb
+        wandb.init(project="2048_rl", name="no_die_panelty")
+
+       
+    
+    
+    for episode in tqdm.tqdm(range(EPISODES)):
         if episode != 0:
             env.reset()
-        encoded_boardstate = torch.tensor(env.boardstate, dtype=int)
-        encoded_boardstate += (encoded_boardstate==-1)*2
-        encoded_boardstate = torch.log2(encoded_boardstate)
-        encoded_boardstate = encoded_boardstate - max(encoded_boardstate.min(), 1) + 1
-        
+        state = encode_state(torch.tensor(env.boardstate))
         total_reward = 0
-        
+        moved = 0
+        not_moved = 0
+        n_step = 0
         for t in range(150 * (episode//1000 + 1)):
             action = agent.act(state)
             action_qt = ACTION_SPACE[action]
             next_state, reward, done = env.step(action_qt)
-            if done:
-                reward -= 1000 * (episode//100 + 1)
-            next_state = np.array(next_state) / max(next_state)
+            next_state = encode_state(torch.tensor(next_state))
+            
+            ##################################################
+            ## reward tuning
+            # if done: ## 패배시 패널티
+            #     # reward -= 1000 * (episode//100 + 1)
+            #     reward -= 1000
+            ## 못움직이는 행동하면 패널티
+            if torch.all(next_state==state):
+                # import pdb;pdb.set_trace()
+                reward -= 10
+                not_moved += 1
+            else:
+                moved += 1
+                
+            ####################################################
+                
             agent.remember(state, action, reward, next_state, done)
             agent.train()
             
@@ -125,12 +174,25 @@ if __name__ == "__main__":
             total_reward += reward
             
             if done:
-                n_step = t
                 break
+        
+        n_step = t
         
         agent.update_target()
         agent.epsilon = max(EPS_END, agent.epsilon * EPS_DECAY)
+        info = {"Episode": episode + 1, 
+                "Total_Reward": round(total_reward, 2), 
+                "Epsilon": round(agent.epsilon, 2), 
+                "steps": n_step, 
+                "moved_ratio": round(moved/(moved+not_moved), 2)}
+        if USE_WANDB:
+            wandb.log(info)
+        else:
+            print(info)
         
-        print(f"Episode {episode + 1}: Total Reward = {total_reward:.1f}, Epsilon = {agent.epsilon:.2f}, steps = {n_step:.2f}")
+        # print(f"Episode {episode + 1}: Total Reward = {total_reward:.1f}, Epsilon = {agent.epsilon:.2f}, steps = {n_step:.2f}")
     # import pdb;pdb.set_trace()
     sys.exit()
+    if USE_WANDB:
+        wandb.save("model.pt")
+        wandb.finish()

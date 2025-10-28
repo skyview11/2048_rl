@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "train.py", line 124, in <module>
+    action = agent.act(state)
+NameError: name 'state' is not defined

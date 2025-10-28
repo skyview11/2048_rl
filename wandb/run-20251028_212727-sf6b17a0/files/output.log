@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "train.py", line 150, in <module>
+    agent.remember(state, action, reward, next_state, done)
+  File "train.py", line 74, in remember
+    self.memory.append((state, action, reward, next_state, done))
+  File "train.py", line 30, in append
+    self.memory[i][self.n] = d
+IndexError: index 10000 is out of bounds for dimension 0 with size 10000

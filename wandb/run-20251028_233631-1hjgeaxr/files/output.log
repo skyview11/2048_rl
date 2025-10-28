@@ -1,0 +1,23 @@
+ 17%|████████████████▊                                                                                  | 851/5000 [15:19<1:00:12,  1.15it/s]Traceback (most recent call last):
+  File "/home/skyview/projects/toy_projects/2048_rl/board.py", line 121, in paintEvent
+    painter.setBrush(QColor(wall[0], wall[1], wall[2]))
+KeyboardInterrupt
+ 17%|████████████████▉                                                                                  | 853/5000 [15:21<1:14:41,  1.08s/it]
+Traceback (most recent call last):
+  File "train.py", line 166, in <module>
+    agent.train()
+  File "train.py", line 103, in train
+    self.optimizer.step()
+  File "/home/skyview/miniconda3/envs/2048_rl/lib/python3.8/site-packages/torch/optim/optimizer.py", line 484, in wrapper
+    out = func(*args, **kwargs)
+  File "/home/skyview/miniconda3/envs/2048_rl/lib/python3.8/site-packages/torch/optim/optimizer.py", line 89, in _use_grad
+    ret = func(self, *args, **kwargs)
+  File "/home/skyview/miniconda3/envs/2048_rl/lib/python3.8/site-packages/torch/optim/adam.py", line 226, in step
+    adam(
+  File "/home/skyview/miniconda3/envs/2048_rl/lib/python3.8/site-packages/torch/optim/optimizer.py", line 161, in maybe_fallback
+    return func(*args, **kwargs)
+  File "/home/skyview/miniconda3/envs/2048_rl/lib/python3.8/site-packages/torch/optim/adam.py", line 766, in adam
+    func(
+  File "/home/skyview/miniconda3/envs/2048_rl/lib/python3.8/site-packages/torch/optim/adam.py", line 431, in _single_tensor_adam
+    denom = (exp_avg_sq.sqrt() / bias_correction2_sqrt).add_(eps)
+KeyboardInterrupt

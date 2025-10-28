@@ -1,0 +1,13 @@
+ 30%|██████████████████████████████▍                                                                     | 1520/5000 [24:18<55:38,  1.04it/s]
+Traceback (most recent call last):
+  File "train.py", line 166, in <module>
+    agent.train()
+  File "train.py", line 102, in train
+    loss.backward()
+  File "/home/skyview/miniconda3/envs/2048_rl/lib/python3.8/site-packages/torch/_tensor.py", line 521, in backward
+    torch.autograd.backward(
+  File "/home/skyview/miniconda3/envs/2048_rl/lib/python3.8/site-packages/torch/autograd/__init__.py", line 289, in backward
+    _engine_run_backward(
+  File "/home/skyview/miniconda3/envs/2048_rl/lib/python3.8/site-packages/torch/autograd/graph.py", line 769, in _engine_run_backward
+    return Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+KeyboardInterrupt
