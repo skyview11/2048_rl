@@ -16,7 +16,7 @@ def load_colormap():
 
 
 class BlockUnit(QLabel):
-    animate_time = 1
+    animate_time = 100
     def __init__(self, parent, id, blockstate, color, size=(100, 100)):
         super().__init__()
         self.unitsize = size
